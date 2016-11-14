@@ -8,6 +8,8 @@ namespace CommonTypes
 {
     public static class Constants
     {
-        public const String OPERATOR_EXE = "Operator.exe";
+        public const String OPERATOR_EXE = @"..\..\..\Operator\bin\Debug\Operator.exe";
+        //public const String OPERATOR_EXE = @"Operator.exe";
+        public const Char TUPLE_SEPARATOR = ',';
     }
 }

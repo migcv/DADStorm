@@ -1,8 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CommonTypes;
+using CommonTypes.operators;
+using System;
+using System.Diagnostics;
+using System.Runtime.Remoting;
+using System.Runtime.Remoting.Channels;
+using System.Runtime.Remoting.Channels.Tcp;
 
 namespace Operator
 {
@@ -10,8 +12,79 @@ namespace Operator
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Received " + String.Join(",", args));
+            //Debugger.Launch();
+
+            if (args.Length < 6)
+            {
+                Console.WriteLine("Invalid Argument Count");
+                return;
+            }
+
+            String type = args[0];
+            int port = Int32.Parse(args[1]);
+            Boolean fullLog = args[2].Equals("full") ? true : false;
+            String routing = args[3];
+            String[] input = args[4].Split(',');
+            String[] output = args[5].Split(',');
+            String[] parameters = null;
+
+            if (args.Length > 6)
+            {
+                parameters = args[6].Split(',');
+
+                if (parameters[0] == null || parameters[0].Equals(""))
+                {
+                    parameters = null;
+                }
+            }
+
+            if (input[0] == null || input[0].Equals(""))
+            {
+                input = null;
+            }
+
+            if (output[0] == null || output[0].Equals(""))
+            {
+                output = null;
+            }
+
+            TcpChannel channel = new TcpChannel(port);
+            ChannelServices.RegisterChannel(channel, true);
+
+            RemoteOperator remoteOperator = createOperatorType(type, fullLog, routing, input, output, parameters);
+
+            RemotingServices.Marshal(remoteOperator, "op", remoteOperator.GetType());
+
+            Console.WriteLine("Started Operator " + type + " on port " + port);
             Console.ReadLine();
+        }
+
+        private static RemoteOperator createOperatorType(String operatorType, Boolean isFullLog, String routing, String[] inputSources, String[] outputSources, String[] operatorParams)
+        {
+            RemoteOperator remoteOperator;
+
+            switch (operatorType)
+            {
+                case "COUNT":
+                    remoteOperator = new Count(inputSources, outputSources, routing, isFullLog);
+                    break;
+                case "CUSTOM":
+                    remoteOperator = new Custom(inputSources, outputSources, routing, isFullLog, operatorParams);
+                    break;
+                case "DUP":
+                    remoteOperator = new Dup(inputSources, outputSources, routing, isFullLog);
+                    break;
+                case "FILTER":
+                    remoteOperator = new Filter(inputSources, outputSources, routing, isFullLog, operatorParams);
+                    break;
+                case "UNIQ":
+                    remoteOperator = new Uniq(inputSources, outputSources, routing, isFullLog, operatorParams);
+                    break;
+                default:
+                    throw new Exception("Unknown Operator Type");
+            }
+
+            return remoteOperator;
         }
     }
 }

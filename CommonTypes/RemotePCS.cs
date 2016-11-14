@@ -13,11 +13,46 @@ namespace CommonTypes
             this.runningOperators = new List<int>();
         }
 
-        public Boolean createOperator(String operatorType, int operatorPort, String[] inputSources, String[] outputSources, params Object[] operatorParams)
+        public Boolean createOperator(String operatorType, int operatorPort, Boolean isFullLog, String routing, String[] inputSources, String[] outputSources, String[] operatorParams)
         {
-            String parameters = String.Join(" ", operatorParams);
+            String syntaxWithParameters = "{0} {1} {2} {3} \"{4}\" \"{5}\" \"{6}\"";
+            String syntaxWithoutParameters = "{0} {1} {2} {3} \"{4}\" \"{5}\"";
+            String syntaxFormatted;
 
-            ProcessStartInfo processStartInfo = new ProcessStartInfo(Constants.OPERATOR_EXE, parameters);
+            String logType = isFullLog ? "full" : "light";
+
+            String input;
+            String output;
+
+            if (inputSources == null)
+            {
+                input = "";
+            }
+            else
+            {
+                input = String.Join(",", inputSources);
+            }
+
+            if (outputSources == null)
+            {
+                output = "";
+            }
+            else
+            {
+                output = String.Join(",", outputSources);
+            }
+
+            if (operatorParams == null)
+            {
+                syntaxFormatted = String.Format(syntaxWithoutParameters, operatorType, operatorPort, logType, routing, input, output);
+            }
+            else
+            {
+                String args = String.Join(",", operatorParams);
+                syntaxFormatted = String.Format(syntaxWithParameters, operatorType, operatorPort, logType, routing, input, output, args);
+            }
+
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(Constants.OPERATOR_EXE, syntaxFormatted);
             Process process = new Process();
             process.StartInfo = processStartInfo;
 
@@ -27,7 +62,7 @@ namespace CommonTypes
                 {
                     this.runningOperators.Add(operatorPort);
 
-                    Console.WriteLine("Creating Operator " + operatorType + " on port " + operatorPort + " with following parameters " + parameters);
+                    Console.WriteLine("Creating Operator " + operatorType + " on port " + operatorPort + " with following parameters " + syntaxFormatted);
 
                     return true;
                 }
