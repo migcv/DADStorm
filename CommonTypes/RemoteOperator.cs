@@ -5,168 +5,176 @@ using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Threading;
 
-namespace CommonTypes
-{
-    public abstract class RemoteOperator : MarshalByRefObject
-    {
-        public string type;				// Name of the Operator
-        public Tuple input;				// Tuple to operate
-        public Tuple result;				// Tuple to send
+namespace CommonTypes {
+	public abstract class RemoteOperator : MarshalByRefObject {
+		public string type;             // Name of the Operator
+		public Tuple input;             // Tuple to operate
+		public Tuple result;                // Tuple to send
 
-        public string[] inputSources;	// URLs of the previous Operators
-        public string[] outputSources;     // URLs of the next Operators
+		public string[] inputSources;   // URLs of the previous Operators
+		public string[] outputSources;     // URLs of the next Operators
 
-        public string routing;           // Routing method: PRIMARY, HASH, RANDOM
+		public string routing;           // Routing method: PRIMARY, HASH, RANDOM
 
-        public bool isFullLog;           // Controls if Operator have to send logs of the results to the PuppetMaster
+		public bool isFullLog;           // Controls if Operator have to send logs of the results to the PuppetMaster
 
-        public string[] parameters;      // Parameters for the operation
+		public string[] parameters;      // Parameters for the operation
 
-        public bool doWork = false;		 // Controls when PuppetMaster says that the Operator can work (Default: false)
-        public bool isFreezed = false;   // Controls when PuppetMaster says to the Operator to freeze(true) or to unfreeze(false)
-        public int interval = 0;
+		public string state = Constants.STATE_WAITING;
 
-        public RemoteOperator() { }
+		public bool doWork = false;      // Controls when PuppetMaster says that the Operator can work (Default: false)
+		public bool isFreezed = false;   // Controls when PuppetMaster says to the Operator to freeze(true) or to unfreeze(false)
+		public int interval = 0;
 
-        public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters = null)
-        {
-            this.type = type;
-            this.inputSources = inputSources;
-            this.outputSources = outputSources;
-            this.routing = routing;
-            this.isFullLog = logLevel;
-            this.parameters = parameters;
-            start();
-        }
+		public RemoteOperator() { }
 
-        private List<Tuple> readFromFile(String fileName)
-        {
-            List<Tuple> tupleList = new List<Tuple>();
+		public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters = null) {
+			this.type = type;
+			this.inputSources = inputSources;
+			this.outputSources = outputSources;
+			this.routing = routing;
+			this.isFullLog = logLevel;
+			this.parameters = parameters;
+			//start();
+		}
 
-            String[] lines = System.IO.File.ReadAllLines("../../../input/" + fileName);
+		private List<Tuple> readFromFile(String fileName) {
+			List<Tuple> tupleList = new List<Tuple>();
 
-            foreach(String line in lines)
-            {
-                String tupleStr;
+			String[] lines = System.IO.File.ReadAllLines("../../../input/" + fileName);
 
-                int commentIndex = line.IndexOf('%');
+			foreach (String line in lines) {
+				String tupleStr;
 
-                if(commentIndex == 0)
-                {
-                    tupleStr = "";
-                }
-                else if(commentIndex > 0)
-                {
-                    tupleStr = line.Substring(0, commentIndex);
-                }
-                else
-                {
-                    tupleStr = line;
-                }
+				int commentIndex = line.IndexOf('%');
 
-                if(tupleStr.Length > 0)
-                {
-                    tupleList.Add(Tuple.fromString(tupleStr));
-                }
-            }
+				if (commentIndex == 0) {
+					tupleStr = "";
+				}
+				else if (commentIndex > 0) {
+					tupleStr = line.Substring(0, commentIndex);
+				}
+				else {
+					tupleStr = line;
+				}
 
-            return tupleList;
-        }
+				if (tupleStr.Length > 0) {
+					tupleList.Add(Tuple.fromString(tupleStr));
+				}
+			}
 
-        public void start()
-        {
-            // Change Flags
+			return tupleList;
+		}
 
-            // Check for input files
-            foreach(String fileName in inputSources)
-            {
-                if(!fileName.StartsWith("tcp://"))
-                {
-                    List<Tuple> tupleList = this.readFromFile(fileName);
+		public void start() {
+			// Change Flags
+			doWork = true;
+			// Check for input files
+			foreach (String fileName in inputSources) {
+				if (!fileName.StartsWith("tcp://")) {
+					List<Tuple> tupleList = this.readFromFile(fileName);
 
-                    foreach(Tuple t in tupleList)
-                    {
-                        process(t);
-                    }
-                }
-            }
-        }
+					foreach (Tuple t in tupleList) {
+						process(t);
+					}
+				}
+			}
+		}
 
-        public void process(Tuple input)
-        {
-            reset();
-            receiveInput(input);
-            doOperation();
-            sendResult();
-        }
+		public void process(Tuple input) {
+			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+			reset();
+			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+			receiveInput(input);
+			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+			doOperation();
+			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+			sendResult();
+			sleep();
+		}
 
-        public void receiveInput(Tuple input)
-        {
-            this.input = input;
-            Console.WriteLine("Received " + input.ToString());
+		public void receiveInput(Tuple input) {
+			this.input = input;
+			Console.WriteLine("Received " + input.ToString());
+		}
 
-			Thread.Sleep(interval);
+		public abstract void doOperation();
 
-			while (!doWork || isFreezed);  // Waits until PuppetMaster gives order to work or until is unfreezed
-        }
+		public void sendResult() {
+			if (this.result == null || this.outputSources == null) {
+				return;
+			}
 
-        public abstract void doOperation();
-
-        public void sendResult()
-        {
-            if (this.result == null || this.outputSources == null)
-            {
-                return;
-            }
-
-            Console.WriteLine("Sending " + this.result.ToString());
-
-            IDictionary options = new Hashtable();
-
-            options["name"] = this.type + "output" + (new Random()).Next(0, 10000); ;
+			Console.WriteLine("Sending " + this.result.ToString());
+			IDictionary options = new Hashtable();
+			options["name"] = this.type + "output" + (new Random()).Next(0, 10000); ;
 
 			TcpChannel channel = new TcpChannel(options, null, null);
 			ChannelServices.RegisterChannel(channel, true);
 
-            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.getRoutingOperator());
-            outputOperator.process(this.result);
+			RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.getRoutingOperator());
+			outputOperator.process(this.result);
 
-            ChannelServices.UnregisterChannel(channel);
-        }
+			ChannelServices.UnregisterChannel(channel);
+		}
 
-        private String getRoutingOperator()
-        {
-            switch (this.routing)
-            {
-                case "primary":
-                    return this.outputSources[0];
+		public string Name {
+			get { return type; }
+		}
 
-                default:
-                    return this.outputSources[0]; // For now is PRIMARY
-            }
-        }
+		public void setInterval(int miliseconds) { interval = miliseconds; }
 
-        private void reset()
-        {
-            this.input = null;
-            this.result = null;
-        }
+		public void startWorking() {
+			state = Constants.STATE_RUNNING;
+			start();
+		}
 
-        public string Name
-        {
-            get { return type; }
-        }
+		public void crashOperator() {
+			System.Environment.Exit(1);
+		}
 
-        public void setInterval(int miliseconds) { interval = miliseconds; }
+		public void freeze() {
+			isFreezed = true;
+			state = Constants.STATE_FREEZED;
+		}
 
-		public void startWorking() { doWork = true; }
+		public void unFreeze() {
+			isFreezed = false;
+			if (doWork) {
+				state = Constants.STATE_RUNNING;
+			}
+			else {
+				state = Constants.STATE_WAITING;
+			}
+		}
 
-		public void freeze() { isFreezed = true; }
-
-        public void unFreeze() { isFreezed = false; }
+		public string operatorState() { return state; }
 
 		public override object InitializeLifetimeService() {
 			return null;
+		}
+		/*
+		 *	Private Methods
+		 */
+		private String getRoutingOperator() {
+			switch (this.routing) {
+				case "primary":
+					return this.outputSources[0];
+
+				default:
+					return this.outputSources[0]; // For now is PRIMARY
+			}
+		}
+
+		private void reset() {
+			this.input = null;
+			this.result = null;
+		}
+
+		private void sleep() {
+			state = Constants.STATE_WAITING;
+			Thread.Sleep(interval);
+			state = Constants.STATE_RUNNING;
 		}
 	}
 }

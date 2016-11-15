@@ -14,7 +14,7 @@ namespace PuppetMaster {
 		private readonly bool LOCALHOST = true; // Flag that says if the project is to be run in a single machine or in many machines
 		private int port_localhost = 10002;	// 1st port thats free to use, only if the project is running in one machine
 
-		private Dictionary<string, List<string>> operatorsURL = new Dictionary<string, List<string>>(); // List with each operators replica url
+		private Dictionary<string, List<string>> operatorsURL; // List with each operators replica url
 
 		private List<string> commandsToDo; // Contains the commands to do after the operators are created
 
@@ -22,10 +22,10 @@ namespace PuppetMaster {
 			InitializeComponent();
 			// UI Stuff - Disables Buttons and TextBoxes until a config file is read
 			logTextBox.ReadOnly = true;
-			//commandTextBox.Enabled = false;
+			commandTextBox.Enabled = false;
 			startAllButton.Enabled = false;
 			startOneButton.Enabled = false;
-			//commandButton.Enabled = false;
+			commandButton.Enabled = false;
 
 			// Create Remote PuppetMaster
 			TcpChannel channel = new TcpChannel(PM_PORT);
@@ -38,6 +38,7 @@ namespace PuppetMaster {
 			DialogResult result = openFileDialog.ShowDialog();
 			if (result == DialogResult.OK) {
 				logTextBox.AppendText("<PuppetMaster>: Config file <" + openFileDialog.FileName + "> selected;\r\n");
+				resetVariables();
 				readConfigFile(openFileDialog.FileName);
 				// UI Stuff - Enables Buttons and TextBoxes
 				commandTextBox.Enabled = true;
@@ -61,43 +62,59 @@ namespace PuppetMaster {
 		}
 
 		private void startOperator(string op_id) {
-			logTextBox.AppendText("<PuppetMaster>: <" + op_id + ">");
-			RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
-			for (int i = 0; i < operatorsURL[op_id].Count; i++) {
-				logTextBox.AppendText(" <" + operatorsURL[op_id][i] + ">");
-				pm.startOperator(operatorsURL[op_id][i]);
+			if (operatorExists(op_id)) {
+				logTextBox.AppendText("<PuppetMaster>: <" + op_id + ">");
+				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+				for (int i = 0; i < operatorsURL[op_id].Count; i++) {
+					logTextBox.AppendText(" <" + operatorsURL[op_id][i] + ">");
+					pm.startOperator(operatorsURL[op_id][i]);
+				}
+				logTextBox.AppendText(" started;\r\n");
 			}
-			logTextBox.AppendText(" started;\r\n");
 		}
 
 		private void crashReplica(string op_id, int replica_id) {
-			RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
-			pm.crashOperator(operatorsURL[op_id][replica_id]);
+			if (operatorExists(op_id) && replicaExists(op_id, replica_id)) {
+				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+				pm.crashOperator(operatorsURL[op_id][replica_id]);
+				logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> <" + operatorsURL[op_id][replica_id] + "> crashed;\r\n");
+			}
 		}
 
 		private void intervalOperator(string op_id, int miliseconds) {
-			RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
-			for (int i = 0; i < operatorsURL[op_id].Count; i++) {
-				pm.intervalOperator(operatorsURL[op_id][i], miliseconds);
+			if (operatorExists(op_id)) {
+				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+				for (int i = 0; i < operatorsURL[op_id].Count; i++) {
+					pm.intervalOperator(operatorsURL[op_id][i], miliseconds);
+				}
+				logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> interval <" + miliseconds + ">;\r\n");
 			}
-			logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> interval <" + miliseconds + ">;\r\n");
 		}
 
 		private void freezeReplica(string op_id, int replica_id) {
-			RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
-			pm.freezeOperator(operatorsURL[op_id][replica_id]);
-			logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> <" + operatorsURL[op_id][replica_id] + "> is freezed ;\r\n");
+			if (operatorExists(op_id) && replicaExists(op_id, replica_id)) {
+				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+				pm.freezeOperator(operatorsURL[op_id][replica_id]);
+				logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> <" + operatorsURL[op_id][replica_id] + "> is freezed ;\r\n");
+			}
 		}
 
 		private void unfreezeReplica(string op_id, int replica_id) {
-			RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
-			pm.unfreezeOperator(operatorsURL[op_id][replica_id]);
-			logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> <" + operatorsURL[op_id][replica_id] + "> is unfreezed ;\r\n");
+			if (operatorExists(op_id) && replicaExists(op_id, replica_id)) {
+				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+				pm.unfreezeOperator(operatorsURL[op_id][replica_id]);
+				logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> <" + operatorsURL[op_id][replica_id] + "> is unfreezed ;\r\n");
+			}
 		}
 
-		private void statusOperators() {
-			RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
-			pm.statusOperator();
+		private void statusOperators(string op_id) {
+			if (operatorExists(op_id)) {
+				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+				for (int i = 0; i < operatorsURL[op_id].Count; i++) {
+					string state = pm.statusOperator(operatorsURL[op_id][i]);
+					logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> <" + operatorsURL[op_id][i] + "> status is " + state + ";\r\n");
+				}
+			}
 		}
 
 		private void wait(int miliseconds) {
@@ -225,10 +242,11 @@ namespace PuppetMaster {
 			}
 			else if (command.StartsWith("Crash")) {
 				crashReplica(commandSplited[1], Int32.Parse(commandSplited[2]));
-				logTextBox.AppendText("<PuppetMaster>: <OP> crashed;\r\n");
 			}
 			else if (command.StartsWith("Status")) {
-				statusOperators();
+				foreach(string i in operatorsURL.Keys) {
+					statusOperators(i);
+				}	
 			}
 			else if (command.StartsWith("Interval")) {
 				intervalOperator(commandSplited[1], Int32.Parse(commandSplited[2]));
@@ -247,6 +265,28 @@ namespace PuppetMaster {
 				if (!String.IsNullOrEmpty(command))
 					logTextBox.AppendText("<PuppetMaster>: Command unknown (Start | Crash | Status | Interval | Freeze | Unfreeze | Wait);\r\n");
 			}
+		}
+
+		private bool operatorExists(string op_id) {
+			if(!operatorsURL.ContainsKey(op_id)) {
+				logTextBox.AppendText("<PuppetMaster>: Operator <" + op_id + "> doesn't exists;\r\n");
+				return false;
+			}
+			return true;
+		}
+
+		private bool replicaExists(string op_id, int replica_id) {
+			if (operatorsURL[op_id].Count <= replica_id) {
+				logTextBox.AppendText("<PuppetMaster>: Replica <" + replica_id + "> of <" + op_id + "> doesn't exists;\r\n");
+				return false;
+			}
+			return true;
+		}
+
+		private void resetVariables() {
+			operatorsURL = new Dictionary<string, List<string>>();
+			commandsToDo = new List<string>();
+			logTextBox.Text = "";
 		}
 	}
 }
