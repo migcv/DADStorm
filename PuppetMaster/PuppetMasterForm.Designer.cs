@@ -34,6 +34,7 @@ namespace PuppetMaster {
 			this.openFileDialog = new System.Windows.Forms.OpenFileDialog();
 			this.commandButton = new System.Windows.Forms.Button();
 			this.label1 = new System.Windows.Forms.Label();
+			this.crashAllButton = new System.Windows.Forms.Button();
 			this.SuspendLayout();
 			// 
 			// logTextBox
@@ -107,11 +108,22 @@ namespace PuppetMaster {
 			this.label1.TabIndex = 6;
 			this.label1.Text = "Operators:";
 			// 
+			// crashAllButton
+			// 
+			this.crashAllButton.Location = new System.Drawing.Point(700, 147);
+			this.crashAllButton.Name = "crashAllButton";
+			this.crashAllButton.Size = new System.Drawing.Size(118, 23);
+			this.crashAllButton.TabIndex = 7;
+			this.crashAllButton.Text = "Crash All";
+			this.crashAllButton.UseVisualStyleBackColor = true;
+			this.crashAllButton.Click += new System.EventHandler(this.crashAllButton_Click);
+			// 
 			// PuppetMasterForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(830, 345);
+			this.Controls.Add(this.crashAllButton);
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.commandButton);
 			this.Controls.Add(this.startOneButton);
@@ -136,6 +148,7 @@ namespace PuppetMaster {
 		private System.Windows.Forms.OpenFileDialog openFileDialog;
 		private Button commandButton;
 		private Label label1;
+		private Button crashAllButton;
 	}
 }
 

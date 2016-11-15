@@ -66,8 +66,8 @@ namespace PuppetMaster {
 				logTextBox.AppendText("<PuppetMaster>: <" + op_id + ">");
 				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
 				for (int i = 0; i < operatorsURL[op_id].Count; i++) {
-					logTextBox.AppendText(" <" + operatorsURL[op_id][i] + ">");
 					pm.startOperator(operatorsURL[op_id][i]);
+					logTextBox.AppendText(" <" + operatorsURL[op_id][i] + ">");
 				}
 				logTextBox.AppendText(" started;\r\n");
 			}
@@ -78,6 +78,10 @@ namespace PuppetMaster {
 				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
 				pm.crashOperator(operatorsURL[op_id][replica_id]);
 				logTextBox.AppendText("<PuppetMaster>: <" + op_id + "> <" + operatorsURL[op_id][replica_id] + "> crashed;\r\n");
+				operatorsURL[op_id].RemoveAt(replica_id);
+				if(operatorsURL[op_id].Count == 0) { // If doesnt have any more replicas remove Operator from Dictionary
+					operatorsURL.Remove(op_id);
+				}
 			}
 		}
 
@@ -287,6 +291,15 @@ namespace PuppetMaster {
 			operatorsURL = new Dictionary<string, List<string>>();
 			commandsToDo = new List<string>();
 			logTextBox.Text = "";
+		}
+
+		private void crashAllButton_Click(object sender, EventArgs e) {
+			System.Collections.Generic.Dictionary<string, List<string>>.KeyCollection keys = operatorsURL.Keys;
+			foreach (string op_id in keys) {
+				for (int j = 0; operatorsURL.ContainsKey(op_id);) {
+					crashReplica(op_id, j);
+				}
+			}
 		}
 	}
 }

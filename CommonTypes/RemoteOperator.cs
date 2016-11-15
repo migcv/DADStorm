@@ -3,9 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
+using System.Runtime.Remoting.Messaging;
 using System.Threading;
 
 namespace CommonTypes {
+
 	public abstract class RemoteOperator : MarshalByRefObject {
 		public string type;             // Name of the Operator
 		public Tuple input;             // Tuple to operate
@@ -82,7 +84,7 @@ namespace CommonTypes {
 		}
 
 		public void process(Tuple input) {
-			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+			while (isFreezed || !doWork);  // Waits until PuppetMaster unfreezes Operator
 			reset();
 			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
 			receiveInput(input);
@@ -113,7 +115,13 @@ namespace CommonTypes {
 			ChannelServices.RegisterChannel(channel, true);
 
 			RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.getRoutingOperator());
-			outputOperator.process(this.result);
+			//outputOperator.process(this.result);
+
+			RemoteAsyncDelegateProcess RemoteDel = new RemoteAsyncDelegateProcess(outputOperator.process);
+			// Call delegate to remote method
+			IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
+			// Wait for the end of the call and then explictly call EndInvoke
+			//RemAr.AsyncWaitHandle.WaitOne();
 
 			ChannelServices.UnregisterChannel(channel);
 		}

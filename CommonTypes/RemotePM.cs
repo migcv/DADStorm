@@ -6,8 +6,10 @@ using System.Runtime.Remoting.Channels.Tcp;
 
 namespace CommonTypes
 {
-    public class RemotePM : MarshalByRefObject {
+	public class RemotePM : MarshalByRefObject {
+
 		private RemotePCS pcs;
+
 		public RemotePM() {
 			pcs = (RemotePCS)Activator.GetObject(typeof(RemotePCS), "tcp://localhost:10000/RemotePCS");
 		}
@@ -31,7 +33,10 @@ namespace CommonTypes
 
 		public void startOperator(string op_url) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-			rm_op.startWorking();
+			//rm_op.startWorking();
+			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(rm_op.startWorking);
+			// Call delegate to remote method
+			IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
 		}
 
 		public void crashOperator(string op_url) {
