@@ -90,9 +90,9 @@ namespace PuppetMaster {
 			// 
 			// commandButton
 			// 
-			this.commandButton.Location = new System.Drawing.Point(700, 311);
+			this.commandButton.Location = new System.Drawing.Point(700, 290);
 			this.commandButton.Name = "commandButton";
-			this.commandButton.Size = new System.Drawing.Size(118, 23);
+			this.commandButton.Size = new System.Drawing.Size(118, 43);
 			this.commandButton.TabIndex = 5;
 			this.commandButton.Text = "Enter";
 			this.commandButton.UseVisualStyleBackColor = true;

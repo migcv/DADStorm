@@ -9,6 +9,7 @@ namespace CommonTypes.operators
 {
     public class Filter : RemoteOperator
     {
+
         public Filter() { }
 
         public Filter(string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters)
@@ -16,7 +17,7 @@ namespace CommonTypes.operators
         {
         }
 
-        public override void doOperation()
+        public override void doOperation(Tuple input)
         {
             int fieldNumber = Int32.Parse(this.parameters[0]) - 1;
             string condition = this.parameters[1];

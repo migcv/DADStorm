@@ -9,7 +9,7 @@
         {
         }
 
-        public override void doOperation()
+        public override void doOperation(Tuple input)
         {
             result = input;
         }

@@ -15,7 +15,7 @@ namespace CommonTypes.operators
             this.tupleList = new List<Tuple>();
         }
 
-        public override void doOperation()
+        public override void doOperation(Tuple input)
         {
             if (parameters.Length == 1)
             {

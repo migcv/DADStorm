@@ -33,16 +33,17 @@ namespace CommonTypes
 
 		public void startOperator(string op_url) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-			//rm_op.startWorking();
+
 			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(rm_op.startWorking);
-			// Call delegate to remote method
 			IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
 		}
 
 		public void crashOperator(string op_url) {
 			try {
 				RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-				rm_op.crashOperator();
+
+				RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(rm_op.crashOperator);
+				IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
 			}
 			catch { }
 		}
@@ -54,12 +55,16 @@ namespace CommonTypes
 
 		public void freezeOperator(string op_url) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-			rm_op.freeze();
+
+			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(rm_op.freeze);
+			IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
 		}
 
 		public void unfreezeOperator(string op_url) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-			rm_op.unFreeze();
+
+			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(rm_op.unfreeze);
+			IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
 		}
 
 		public string statusOperator(string op_url) {

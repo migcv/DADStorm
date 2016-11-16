@@ -9,9 +9,9 @@ using System.Threading;
 namespace CommonTypes {
 
 	public abstract class RemoteOperator : MarshalByRefObject {
-		public string type;             // Name of the Operator
-		public Tuple input;             // Tuple to operate
-		public Tuple result;                // Tuple to send
+		public string type;     // Name of the Operator
+		public List<Tuple> inputList = new List<Tuple>();		// Tuple to operate
+		public Tuple result = null;		// Tuple to send
 
 		public string[] inputSources;   // URLs of the previous Operators
 		public string[] outputSources;     // URLs of the next Operators
@@ -37,7 +37,6 @@ namespace CommonTypes {
 			this.routing = routing;
 			this.isFullLog = logLevel;
 			this.parameters = parameters;
-			//start();
 		}
 
 		private List<Tuple> readFromFile(String fileName) {
@@ -69,45 +68,55 @@ namespace CommonTypes {
 		}
 
 		public void start() {
-			// Change Flags
-			doWork = true;
-			// Check for input files
-			foreach (String fileName in inputSources) {
-				if (!fileName.StartsWith("tcp://")) {
-					List<Tuple> tupleList = this.readFromFile(fileName);
+			Thread oThread = new Thread(new ThreadStart(this.process));
+			oThread.Start();
+			while (!oThread.IsAlive);
 
-					foreach (Tuple t in tupleList) {
-						process(t);
-					}
+			if (!inputSources[0].StartsWith("tcp://")) { // Input from file
+				List<Tuple> tupleList = this.readFromFile(inputSources[0]);
+				doWork = true;
+				foreach (Tuple tuple in tupleList) {
+					receiveInput(tuple);
+				}
+			}
+			else { // Input from Operator
+				doWork = true;
+			}
+		}
+
+		public void process() {
+			while (true) {
+				while (isFreezed || !doWork || inputList.Count == 0) ;  // Waits until PuppetMaster unfreezes Operator
+				if (inputList[0] != null) {
+					Tuple input = inputList[0];
+					inputList.RemoveAt(0);
+					doOperation(input);
+					while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+					sendResult();
+					sleep();
+					reset();
 				}
 			}
 		}
 
-		public void process(Tuple input) {
-			while (isFreezed || !doWork);  // Waits until PuppetMaster unfreezes Operator
-			reset();
-			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
-			receiveInput(input);
-			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
-			doOperation();
-			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
-			sendResult();
-			sleep();
-		}
-
 		public void receiveInput(Tuple input) {
-			this.input = input;
-			Console.WriteLine("Received " + input.ToString());
+			inputList.Add(input);
+			Console.WriteLine("RECEIVED <" + input.ToString() + ">;\r\n");
 		}
 
-		public abstract void doOperation();
+		public abstract void doOperation(Tuple input);
 
 		public void sendResult() {
-			if (this.result == null || this.outputSources == null) {
+			if (this.result == null) {
 				return;
 			}
 
-			Console.WriteLine("Sending " + this.result.ToString());
+			Console.WriteLine("RESULT <" + result.ToString() + ">;\r\n");
+
+			if (this.outputSources == null) {
+				return;
+			}
+
 			IDictionary options = new Hashtable();
 			options["name"] = this.type + "output" + (new Random()).Next(0, 10000); ;
 
@@ -115,13 +124,9 @@ namespace CommonTypes {
 			ChannelServices.RegisterChannel(channel, true);
 
 			RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.getRoutingOperator());
-			//outputOperator.process(this.result);
 
-			RemoteAsyncDelegateProcess RemoteDel = new RemoteAsyncDelegateProcess(outputOperator.process);
-			// Call delegate to remote method
+			RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
 			IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
-			// Wait for the end of the call and then explictly call EndInvoke
-			//RemAr.AsyncWaitHandle.WaitOne();
 
 			ChannelServices.UnregisterChannel(channel);
 		}
@@ -146,7 +151,7 @@ namespace CommonTypes {
 			state = Constants.STATE_FREEZED;
 		}
 
-		public void unFreeze() {
+		public void unfreeze() {
 			isFreezed = false;
 			if (doWork) {
 				state = Constants.STATE_RUNNING;
@@ -175,7 +180,7 @@ namespace CommonTypes {
 		}
 
 		private void reset() {
-			this.input = null;
+			//this.input = null;
 			this.result = null;
 		}
 
@@ -184,5 +189,33 @@ namespace CommonTypes {
 			Thread.Sleep(interval);
 			state = Constants.STATE_RUNNING;
 		}
+		/*
+		 *	CODE THATS NO LONGER USED 
+		 */
+		public void start_OLD() {
+			// Change Flags
+			//doWork = true;
+			// Check for input files
+			foreach (String fileName in inputSources) {
+				if (!fileName.StartsWith("tcp://")) {
+					List<Tuple> tupleList = this.readFromFile(fileName);
+
+					foreach (Tuple t in tupleList) {
+						//process(t);
+					}
+				}
+			}
+		}
+		public void process_OLD(Tuple input) {
+			while (isFreezed || !doWork) ;  // Waits until PuppetMaster unfreezes Operator
+			receiveInput(input);
+			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+			//doOperation();
+			while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
+			sendResult();
+			sleep();
+			reset();
+		}
+
 	}
 }

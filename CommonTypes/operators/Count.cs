@@ -18,7 +18,7 @@ namespace CommonTypes.operators
             this.tupleCounter = 0;
         }
 
-        public override void doOperation()
+        public override void doOperation(Tuple input)
         {
             this.tupleCounter++;
             this.result = Tuple.fromString(this.tupleCounter.ToString());

@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 
 namespace CommonTypes
 {
-	public delegate void RemoteAsyncDelegateProcess(Tuple input);
+	public delegate void RemoteAsyncDelegateTuple(Tuple input);
 
 	public delegate void RemoteAsyncDelegate();
 
+	public delegate void RemoteAsyncDelegateInt(int integer);
 
 	public static class Constants
     {
@@ -25,7 +26,7 @@ namespace CommonTypes
 
 		public static void OurRemoteAsyncCallBack(IAsyncResult ar) {
 			// Alternative 2: Use the callback to get the return value
-			RemoteAsyncDelegateProcess del = (RemoteAsyncDelegateProcess)((AsyncResult)ar).AsyncDelegate;
+			RemoteAsyncDelegateTuple del = (RemoteAsyncDelegateTuple)((AsyncResult)ar).AsyncDelegate;
 			return;
 		}
 	}

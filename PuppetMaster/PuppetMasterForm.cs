@@ -294,10 +294,14 @@ namespace PuppetMaster {
 		}
 
 		private void crashAllButton_Click(object sender, EventArgs e) {
-			System.Collections.Generic.Dictionary<string, List<string>>.KeyCollection keys = operatorsURL.Keys;
-			foreach (string op_id in keys) {
-				for (int j = 0; operatorsURL.ContainsKey(op_id);) {
-					crashReplica(op_id, j);
+			List<string> urls = new List<string>();
+			foreach (List<string> op_urls in operatorsURL.Values) {
+				for (int j = 0; j < op_urls.Count; j++) {
+					try {
+						RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_urls[j]);
+						rm_op.crashOperator();
+					}
+					catch { }
 				}
 			}
 		}
