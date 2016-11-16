@@ -13,6 +13,8 @@ namespace CommonTypes
 
 	public delegate void RemoteAsyncDelegateInt(int integer);
 
+	public delegate void RemoteAsyncDelegateString(string str);
+
 	public static class Constants
     {
         public const String OPERATOR_EXE = @"..\..\..\Operator\bin\Debug\Operator.exe";

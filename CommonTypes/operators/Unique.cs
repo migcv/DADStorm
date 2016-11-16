@@ -7,8 +7,6 @@ namespace CommonTypes.operators
     {
         private List<Tuple> tupleList;
 
-        public Uniq() { }
-
         public Uniq(string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters)
             : base("UNIQ", inputSources, outputSources, routing, logLevel, parameters)
         {

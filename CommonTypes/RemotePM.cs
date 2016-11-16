@@ -10,6 +10,8 @@ namespace CommonTypes
 
 		private RemotePCS pcs;
 
+		private List<string[]> resultList = new List<string[]>();
+
 		public RemotePM() {
 			pcs = (RemotePCS)Activator.GetObject(typeof(RemotePCS), "tcp://localhost:10000/RemotePCS");
 		}
@@ -26,16 +28,16 @@ namespace CommonTypes
                 String[] output = unsafeOutput == null ? null : unsafeOutput.ToArray();
                 String[] parameters = (unsafeParams == null || unsafeParams.Count < 1) ? null : unsafeParams.ToArray();
 
-				// createOperator(operatorType, operatorPort, isFullLog, routing, inputSources, outputSources, operatorParams)
+				// createOperator(operatorID, operatorType, operatorPort, isFullLog, routing, inputSources, outputSources, operatorParams)
 				pcs.createOperator((string) operator_info[2], Int32.Parse(op_port), (bool)operator_info[6], (string) operator_info[5], input, output, parameters);
 			}
 		}
 
-		public void startOperator(string op_url) {
+		public void startOperator(string op_url, string op_id) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
 
-			RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(rm_op.startWorking);
-			IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
+			RemoteAsyncDelegateString RemoteDel = new RemoteAsyncDelegateString(rm_op.startWorking);
+			IAsyncResult RemAr = RemoteDel.BeginInvoke(op_id, null, null);
 		}
 
 		public void crashOperator(string op_url) {
@@ -70,6 +72,19 @@ namespace CommonTypes
 		public string statusOperator(string op_url) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
 			return rm_op.operatorState();
+		}
+
+		public void receiveResult(string[] result) {
+			resultList.Add(result);
+		}
+
+		public string[] getResult() {
+			if(resultList.Count > 0) {
+				string[] res = resultList[0];
+				resultList.RemoveAt(0);
+				return res;
+			}
+			return null;
 		}
 	}
 }

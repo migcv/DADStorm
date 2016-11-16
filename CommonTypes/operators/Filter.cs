@@ -9,9 +9,6 @@ namespace CommonTypes.operators
 {
     public class Filter : RemoteOperator
     {
-
-        public Filter() { }
-
         public Filter(string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters)
             : base("FILTER", inputSources, outputSources, routing, logLevel, parameters)
         {

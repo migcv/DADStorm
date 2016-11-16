@@ -10,8 +10,6 @@ namespace CommonTypes.operators
     {
         private int tupleCounter;
 
-        public Count() { }
-
         public Count(string[] inputSources, string[] outputSources, string routing, bool logLevel)
             : base("COUNT", inputSources, outputSources, routing, logLevel)
         {
