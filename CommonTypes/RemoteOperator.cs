@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Messaging;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace CommonTypes {
@@ -169,14 +170,40 @@ namespace CommonTypes {
 		/*
 		 *	Private Methods
 		 */
-		private String getRoutingOperator() {
-			switch (this.routing) {
-				case "primary":
-					return this.outputSources[0];
+		private String getRoutingOperator()
+        {
+            if(this.routing.Equals("primary"))
+            {
+                return this.outputSources[0];
+            }
+            else if(this.routing.Equals("random"))
+            {
+                Random rnd = new Random();
 
-				default:
-					return this.outputSources[0]; // For now is PRIMARY
-			}
+                return this.outputSources[rnd.Next(0, outputSources.Length)];
+            }
+            else if(this.routing.StartsWith("hashing"))
+            {
+                Regex regex = new Regex(@"\((.*?)\)");
+                var match = regex.Match(this.routing);
+                String idStr = match.Groups[1].ToString();
+
+                Tuple tuple = this.input;
+
+                if(tuple != null)
+                {
+                    String field = tuple.getField(Int32.Parse(idStr));
+
+                    if(field != null)
+                    {
+                        int operatorId = Math.Abs(field.GetHashCode()) % this.outputSources.Length;
+
+                        return this.outputSources[operatorId];
+                    }
+                }
+            }
+
+            return this.outputSources[0]; // For now is PRIMARY
 		}
 
 		private void reset() {
