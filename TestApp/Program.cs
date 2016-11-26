@@ -25,7 +25,7 @@ namespace TestApp
 
             System.Threading.Thread.Sleep(4000);
 
-            count.process(t1);
+            //count.process(t1);
 
             Console.ReadLine();
         }

@@ -10,9 +10,10 @@ using System.Threading;
 namespace CommonTypes {
 
 	public abstract class RemoteOperator : MarshalByRefObject {
-		public string type;     // Name of the Operator
-		public List<Tuple> inputList = new List<Tuple>();		// Tuple to operate
-		public Tuple result = null;		// Tuple to send
+		public string type;				// Type of the Operator
+		public Tuple result = null;     // Tuple to send
+		public string op_id;			// Operator ID
+		public List<Tuple> inputList = new List<Tuple>();
 
 		public string[] inputSources;   // URLs of the previous Operators
 		public string[] outputSources;     // URLs of the next Operators
@@ -29,8 +30,6 @@ namespace CommonTypes {
 		public bool isFreezed = false;   // Controls when PuppetMaster says to the Operator to freeze(true) or to unfreeze(false)
 		public int interval = 0;
 
-		public RemoteOperator() { }
-
 		public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters = null) {
 			this.type = type;
 			this.inputSources = inputSources;
@@ -38,51 +37,6 @@ namespace CommonTypes {
 			this.routing = routing;
 			this.isFullLog = logLevel;
 			this.parameters = parameters;
-		}
-
-		private List<Tuple> readFromFile(String fileName) {
-			List<Tuple> tupleList = new List<Tuple>();
-
-			String[] lines = System.IO.File.ReadAllLines("../../../input/" + fileName);
-
-			foreach (String line in lines) {
-				String tupleStr;
-
-				int commentIndex = line.IndexOf('%');
-
-				if (commentIndex == 0) {
-					tupleStr = "";
-				}
-				else if (commentIndex > 0) {
-					tupleStr = line.Substring(0, commentIndex);
-				}
-				else {
-					tupleStr = line;
-				}
-
-				if (tupleStr.Length > 0) {
-					tupleList.Add(Tuple.fromString(tupleStr));
-				}
-			}
-
-			return tupleList;
-		}
-
-		public void start() {
-			Thread oThread = new Thread(new ThreadStart(this.process));
-			oThread.Start();
-			while (!oThread.IsAlive);
-
-			if (!inputSources[0].StartsWith("tcp://")) { // Input from file
-				List<Tuple> tupleList = this.readFromFile(inputSources[0]);
-				doWork = true;
-				foreach (Tuple tuple in tupleList) {
-					receiveInput(tuple);
-				}
-			}
-			else { // Input from Operator
-				doWork = true;
-			}
 		}
 
 		public void process() {
@@ -129,6 +83,12 @@ namespace CommonTypes {
 			RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
 			IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
 
+			if (isFullLog) { // Is full log, must send result to PuppetMaster
+				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+				string[] resultArray = { op_id, type, result.ToString() };
+				pm.receiveResult(resultArray);
+			}
+
 			ChannelServices.UnregisterChannel(channel);
 		}
 
@@ -138,8 +98,10 @@ namespace CommonTypes {
 
 		public void setInterval(int miliseconds) { interval = miliseconds; }
 
-		public void startWorking() {
+		public void startWorking(string op_id) {
+			this.op_id = op_id;
 			state = Constants.STATE_RUNNING;
+			doWork = true;
 			start();
 		}
 
@@ -170,6 +132,51 @@ namespace CommonTypes {
 		/*
 		 *	Private Methods
 		 */
+
+		private void start() {
+			Thread oThread = new Thread(new ThreadStart(this.process));
+			oThread.Start();
+			while (!oThread.IsAlive) ;
+
+			if (!inputSources[0].StartsWith("tcp://")) { // Input from file
+				List<Tuple> tupleList = this.readFromFile(inputSources[0]);
+				doWork = true;
+				foreach (Tuple tuple in tupleList) {
+					receiveInput(tuple);
+				}
+			}
+			else { // Input from Operator
+				doWork = true;
+			}
+		}
+
+		private List<Tuple> readFromFile(String fileName) {
+			List<Tuple> tupleList = new List<Tuple>();
+
+			String[] lines = System.IO.File.ReadAllLines("../../../input/" + fileName);
+
+			foreach (String line in lines) {
+				String tupleStr;
+
+				int commentIndex = line.IndexOf('%');
+
+				if (commentIndex == 0) {
+					tupleStr = "";
+				}
+				else if (commentIndex > 0) {
+					tupleStr = line.Substring(0, commentIndex);
+				}
+				else {
+					tupleStr = line;
+				}
+
+				if (tupleStr.Length > 0) {
+					tupleList.Add(Tuple.fromString(tupleStr));
+				}
+			}
+			return tupleList;
+		}
+
 		private String getRoutingOperator()
         {
             if(this.routing.Equals("primary"))
@@ -202,8 +209,7 @@ namespace CommonTypes {
                     }
                 }
             }
-
-            return this.outputSources[0]; // For now is PRIMARY
+			return this.outputSources[0]; // For now is PRIMARY
 		}
 
 		private void reset() {

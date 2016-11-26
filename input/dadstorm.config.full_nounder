@@ -20,7 +20,7 @@ OP2 input ops OP1 rep fact 2 routing primary address tcp://localhost:11002/op, t
 OP3 input ops OP2 rep fact 2 routing primary address tcp://localhost:11004/op, tcp://localhost:11005/op operator spec UNIQ 1
 
 OP4 input ops OP3 rep fact 1 routing primary address tcp://localhost:11006/op operator spec COUNT
- 
+
 OP5 input ops OP4 rep fact 1 routing primary address tcp://localhost:11008/op operator spec CUSTOM mylib.dll,OututOperator,CustomOperation 
 
 %% The following commands can be sent by a PuppetMaster to the stream processing nodes:

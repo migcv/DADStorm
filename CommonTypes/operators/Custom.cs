@@ -9,8 +9,6 @@ namespace CommonTypes.operators {
         private Type t;
         private MethodInfo m;
 
-        public Custom() { }
-
         public Custom(string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters)
             : base("CUSTOM", inputSources, outputSources, routing, logLevel, parameters){
             try{

@@ -9,10 +9,15 @@ using System.Threading;
 using System.Windows.Forms;
 
 namespace PuppetMaster {
+
+	delegate void SetResultCallback(string[] result);
+
 	public partial class PuppetMasterForm : Form {
 		private readonly int PM_PORT = 10001;
 		private readonly bool LOCALHOST = true; // Flag that says if the project is to be run in a single machine or in many machines
-		private int port_localhost = 10002;	// 1st port thats free to use, only if the project is running in one machine
+		private int port_localhost = 10002; // 1st port thats free to use, only if the project is running in one machine
+
+		string loggingLevel = null;	// full or light
 
 		private Dictionary<string, List<string>> operatorsURL; // List with each operators replica url
 
@@ -26,6 +31,8 @@ namespace PuppetMaster {
 			startAllButton.Enabled = false;
 			startOneButton.Enabled = false;
 			commandButton.Enabled = false;
+			crashAllButton.Enabled = false;
+			startCommandsButton.Enabled = false;
 
 			// Create Remote PuppetMaster
 			TcpChannel channel = new TcpChannel(PM_PORT);
@@ -45,6 +52,13 @@ namespace PuppetMaster {
 				//startAllButton.Enabled = true;
 				//startOneButton.Enabled = true;
 				commandButton.Enabled = true;
+				crashAllButton.Enabled = true;
+
+				if(loggingLevel == "full") {
+					Thread oThread = new Thread(new ThreadStart(this.getOperatorsResult));
+					oThread.Start();
+					while (!oThread.IsAlive);
+				}
 				executeCommands();
 			}
 		}
@@ -66,7 +80,7 @@ namespace PuppetMaster {
 				logTextBox.AppendText("<PuppetMaster>: <" + op_id + ">");
 				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
 				for (int i = 0; i < operatorsURL[op_id].Count; i++) {
-					pm.startOperator(operatorsURL[op_id][i]);
+					pm.startOperator(operatorsURL[op_id][i], op_id);
 					logTextBox.AppendText(" <" + operatorsURL[op_id][i] + ">");
 				}
 				logTextBox.AppendText(" started;\r\n");
@@ -132,7 +146,8 @@ namespace PuppetMaster {
 			string op_id = null, n_rep = null, routing = null, op_type = null;
 			List<string> input = null, urlList = null, op_params = null;
 
-			string loggingLevel = null, semantics = null;
+			string semantics = null;
+			loggingLevel = null;
 
 			logTextBox.AppendText("<PuppetMaster>: Reading config file;\r\n");
 
@@ -228,10 +243,8 @@ namespace PuppetMaster {
 
 		private void executeCommands() {
 			if(commandsToDo.Count != 0) { // If commands were included in the config file
-				logTextBox.AppendText("<PuppetMaster>: Running Config file's commands;\r\n");
-				for (int i = 0; i < commandsToDo.Count; i++) {
-					doCommand(commandsToDo[i]);
-				}
+				startCommandsButton.Enabled = true;
+				logTextBox.AppendText("<PuppetMaster>: Press <Start> to execute the commands;\r\n");
 			}
 			else {
 				logTextBox.AppendText("<PuppetMaster>: Config file didn't include commands;\r\n");
@@ -303,6 +316,34 @@ namespace PuppetMaster {
 					}
 					catch { }
 				}
+			}
+			logTextBox.AppendText("<PuppetMaster>: All Operators were crashed!;\r\n");
+		}
+
+		private void getOperatorsResult() {
+			RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
+			while(true) {
+				string[] op_res = pm.getResult();
+				if (op_res != null) {
+					appendResult(op_res);
+				}
+			}
+		}
+
+		private void appendResult(string[] result) {
+			if (this.logTextBox.InvokeRequired) {
+				SetResultCallback d = new SetResultCallback(appendResult);
+				this.Invoke(d, new object[] { result });
+			}
+			else {
+				logTextBox.AppendText("<" + result[0] + "><" + result[1] + ">: RESULT <" + result[2] + ">;\r\n");
+			}
+		}
+
+		private void startCommandsButton_Click(object sender, EventArgs e) {
+			logTextBox.AppendText("<PuppetMaster>: Running Config file's commands;\r\n");
+			for (int i = 0; i < commandsToDo.Count; i++) {
+				doCommand(commandsToDo[i]);
 			}
 		}
 	}

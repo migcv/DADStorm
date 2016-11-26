@@ -35,6 +35,8 @@ namespace PuppetMaster {
 			this.commandButton = new System.Windows.Forms.Button();
 			this.label1 = new System.Windows.Forms.Label();
 			this.crashAllButton = new System.Windows.Forms.Button();
+			this.startCommandsButton = new System.Windows.Forms.Button();
+			this.label3 = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// logTextBox
@@ -118,11 +120,33 @@ namespace PuppetMaster {
 			this.crashAllButton.UseVisualStyleBackColor = true;
 			this.crashAllButton.Click += new System.EventHandler(this.crashAllButton_Click);
 			// 
+			// startCommandsButton
+			// 
+			this.startCommandsButton.Location = new System.Drawing.Point(700, 203);
+			this.startCommandsButton.Name = "startCommandsButton";
+			this.startCommandsButton.Size = new System.Drawing.Size(118, 41);
+			this.startCommandsButton.TabIndex = 8;
+			this.startCommandsButton.Text = "Start";
+			this.startCommandsButton.UseVisualStyleBackColor = true;
+			this.startCommandsButton.Click += new System.EventHandler(this.startCommandsButton_Click);
+			// 
+			// label3
+			// 
+			this.label3.AutoSize = true;
+			this.label3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+			this.label3.Location = new System.Drawing.Point(700, 182);
+			this.label3.Name = "label3";
+			this.label3.Size = new System.Drawing.Size(90, 18);
+			this.label3.TabIndex = 10;
+			this.label3.Text = "Commands:";
+			// 
 			// PuppetMasterForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(830, 345);
+			this.Controls.Add(this.label3);
+			this.Controls.Add(this.startCommandsButton);
 			this.Controls.Add(this.crashAllButton);
 			this.Controls.Add(this.label1);
 			this.Controls.Add(this.commandButton);
@@ -149,6 +173,8 @@ namespace PuppetMaster {
 		private Button commandButton;
 		private Label label1;
 		private Button crashAllButton;
+		private Button startCommandsButton;
+		private Label label3;
 	}
 }
 
