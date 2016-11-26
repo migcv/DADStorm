@@ -90,10 +90,10 @@ namespace CommonTypes {
 				while (isFreezed || !doWork || inputList.Count == 0) ;  // Waits until PuppetMaster unfreezes Operator
 				if (inputList[0] != null) {
 					Tuple input = inputList[0];
-					inputList.RemoveAt(0);
 					doOperation(input);
 					while (isFreezed) ;  // Waits until PuppetMaster unfreezes Operator
 					sendResult();
+					inputList.RemoveAt(0);
 					sleep();
 					reset();
 				}
@@ -188,7 +188,7 @@ namespace CommonTypes {
                 var match = regex.Match(this.routing);
                 String idStr = match.Groups[1].ToString();
 
-                Tuple tuple = this.input;
+                Tuple tuple = this.inputList[0];
 
                 if(tuple != null)
                 {
