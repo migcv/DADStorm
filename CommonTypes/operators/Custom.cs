@@ -11,18 +11,15 @@ namespace CommonTypes.operators {
 
         public Custom(string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters)
             : base("CUSTOM", inputSources, outputSources, routing, logLevel, parameters){
-            try{
-                if (parameters.Length == 3){
-                    this.dll = "../../../input/" + parameters[0];
-                    this.className = parameters[1];
-                    this.method = parameters[2];
-                }
-            }
-            catch { }
         }
 
         public override void doOperation(Tuple input) {
             try{
+                if (parameters.Length == 3)                {
+                    this.dll = "../../../input/" + parameters[0];
+                    this.className = parameters[1];
+                    this.method = parameters[2];
+                }
 
                 byte[] code = File.ReadAllBytes(dll);
                 Assembly assembly = Assembly.Load(code);
