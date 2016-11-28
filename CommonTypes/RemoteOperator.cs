@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Messaging;
@@ -16,7 +17,11 @@ namespace CommonTypes {
 		public List<Tuple> inputList = new List<Tuple>();
 
 		public string[] inputSources;   // URLs of the previous Operators
-		public string[] outputSources;     // URLs of the next Operators
+		public string[] outputSources;  // URLs of the next Operators
+
+		public string op_url;			// Operators own URL
+		public string[] replicas_url;	// Operators replicas URL
+		public string[] output_op;		// Output Opeartor (last operator) URL
 
 		public string routing;           // Routing method: PRIMARY, HASH, RANDOM
 
@@ -30,13 +35,18 @@ namespace CommonTypes {
 		public bool isFreezed = false;   // Controls when PuppetMaster says to the Operator to freeze(true) or to unfreeze(false)
 		public int interval = 0;
 
-		public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters = null) {
+		private bool logCleaned = false;
+
+		public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] output_op, string[] replicas_op, string[] parameters = null) {
 			this.type = type;
 			this.inputSources = inputSources;
 			this.outputSources = outputSources;
 			this.routing = routing;
 			this.isFullLog = logLevel;
 			this.parameters = parameters;
+			this.output_op = output_op;
+			Console.WriteLine("OUTPUT OP IS " + this.output_op[0]);
+			this.replicas_url = replicas_op; // TO DO
 		}
 
 		public void process() {
@@ -57,6 +67,9 @@ namespace CommonTypes {
 		public void receiveInput(Tuple input) {
 			inputList.Add(input);
 			Console.WriteLine("RECEIVED <" + input.ToString() + ">;\r\n");
+
+			//RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
+			//output_op.writeLog(this.op_id, this.type, "RECEIVED <" + result.ToString() + ">");
 		}
 
 		public abstract void doOperation(Tuple input);
@@ -65,7 +78,15 @@ namespace CommonTypes {
 			if (this.result == null) {
 				return;
 			}
-
+			// Writing on log throgh the output operator
+			if (String.Compare(this.op_url, this.output_op[0]) == 0) {
+				writeLog(this.op_id, this.type, this.op_url, "RESULT <" + result.ToString() + ">");
+			}
+			else {
+				RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
+				RemoteAsyncDelegateLog RemoteDelOutput = new RemoteAsyncDelegateLog(output_op.writeLog);
+				IAsyncResult RemArOutput = RemoteDelOutput.BeginInvoke(this.op_id, this.type, this.op_url, "RESULT <" + result.ToString() + ">", null, null);
+			}
 			Console.WriteLine("RESULT <" + result.ToString() + ">;\r\n");
 
 			if (this.outputSources == null) {
@@ -92,14 +113,29 @@ namespace CommonTypes {
 			ChannelServices.UnregisterChannel(channel);
 		}
 
+		public void writeLog(string op_id, string op_type, string op_url, string str) {
+			if (!logCleaned) {
+				System.IO.File.WriteAllText(@"../../../output/log.txt", string.Empty);
+				logCleaned = true;
+			}
+			while(IsFileReady("../../../output/log.txt"));
+			try {
+				using (System.IO.StreamWriter file =
+				new System.IO.StreamWriter(@"../../../output/log.txt", true)) {
+					file.WriteLine("<" + DateTime.Now + "><" + op_id + "><" + op_url + ">: <" + op_type + "> " + str + ";");
+				}
+			} catch(Exception) { }
+		}
+
 		public string Name {
 			get { return type; }
 		}
 
 		public void setInterval(int miliseconds) { interval = miliseconds; }
 
-		public void startWorking(string op_id) {
+		public void startWorking(string op_id, string op_url) {
 			this.op_id = op_id;
+			this.op_url = op_url;
 			state = Constants.STATE_RUNNING;
 			doWork = true;
 			start();
@@ -221,6 +257,25 @@ namespace CommonTypes {
 			state = Constants.STATE_WAITING;
 			Thread.Sleep(interval);
 			state = Constants.STATE_RUNNING;
+		}
+
+		public static bool IsFileReady(String sFilename) {
+			// If the file can be opened for exclusive access it means that the file
+			// is no longer locked by another process.
+			try {
+				using (FileStream inputStream = File.Open(sFilename, FileMode.Open, FileAccess.Read, FileShare.None)) {
+					if (inputStream.Length > 0) {
+						return true;
+					}
+					else {
+						return false;
+					}
+
+				}
+			}
+			catch (Exception) {
+				return false;
+			}
 		}
 		/*
 		 *	CODE THATS NO LONGER USED 

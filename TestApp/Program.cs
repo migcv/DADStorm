@@ -13,8 +13,8 @@ namespace TestApp
             ChannelServices.RegisterChannel(channel, true);
 
             RemotePCS obj = (RemotePCS)Activator.GetObject(typeof(RemotePCS), "tcp://localhost:10000/RemotePCS");
-            obj.createOperator("COUNT", 10010, true, "primary", null, new String[] { "tcp://localhost:10011/op" }, null);
-            obj.createOperator("DUP", 10011, true, "primary", null, null, null);
+           // obj.createOperator("COUNT", 10010, true, "primary", null, new String[] { "tcp://localhost:10011/op" }, null);
+            //obj.createOperator("DUP", 10011, true, "primary", null, null, null);
 
             RemoteOperator count = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), "tcp://localhost:10010/op");
 

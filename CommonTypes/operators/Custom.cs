@@ -9,8 +9,8 @@ namespace CommonTypes.operators {
         private Type t;
         private MethodInfo m;
 
-        public Custom(string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] parameters)
-            : base("CUSTOM", inputSources, outputSources, routing, logLevel, parameters){
+        public Custom(string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] output_op, string[] replicas_op, string[] parameters)
+            : base("CUSTOM", inputSources, outputSources, routing, logLevel, output_op, replicas_op, parameters){
         }
 
         public override void doOperation(Tuple input) {

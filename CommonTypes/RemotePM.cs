@@ -17,27 +17,32 @@ namespace CommonTypes
 		}
 		public void createOperator(object[] operator_info) {  // Operator Info {ID, URLs, Type, InputSources, OutputSources, RoutingOption, logLevel, params}
 			string op_port;
-			for (int i = 0; i < ((List<string>) operator_info[1]).Count; i++) { // Register Operator in all URLs assinged
+			int n_op = ((List<string>)operator_info[1]).Count;
+			for (int i = 0; i < n_op; i++) { // Register Operator in all URLs assinged
 				op_port = ((List<string>)operator_info[1])[i].Split(':')[2].Split('/')[0];
 
-                List<string> unsafeInput = (List<string>)operator_info[3];
-                List<string> unsafeOutput = (List<string>)operator_info[4];
-                List<string> unsafeParams = (List<string>)operator_info[7];
+				List<string> unsafeInput = (List<string>)operator_info[3];
+				List<string> unsafeOutput = (List<string>)operator_info[4];
+				List<string> unsafeParams = (List<string>)operator_info[9];
 
-                String[] input = unsafeInput == null ? null : unsafeInput.ToArray();
-                String[] output = unsafeOutput == null ? null : unsafeOutput.ToArray();
-                String[] parameters = (unsafeParams == null || unsafeParams.Count < 1) ? null : unsafeParams.ToArray();
+				String[] input = unsafeInput == null ? null : unsafeInput.ToArray();
+				String[] output = unsafeOutput == null ? null : unsafeOutput.ToArray();
+				String[] parameters = (unsafeParams == null || unsafeParams.Count < 1) ? null : unsafeParams.ToArray();
 
-				// createOperator(operatorID, operatorType, operatorPort, isFullLog, routing, inputSources, outputSources, operatorParams)
-				pcs.createOperator((string) operator_info[2], Int32.Parse(op_port), (bool)operator_info[6], (string) operator_info[5], input, output, parameters);
+				//List<string> replica_url = (List<string>)operator_info[1];
+				//replica_url.RemoveAt(i);
+				List<string> replica_url = new List<string>();
+
+				// createOperator(operatorID, operatorType, operatorPort, isFullLog, routing, inputSources, outputSources, output_op, replicas_url, operatorParams)
+				pcs.createOperator((string)operator_info[2], Int32.Parse(op_port), (bool)operator_info[6], (string)operator_info[5], input, output, (List<string>)operator_info[7], replica_url, parameters);
 			}
 		}
 
 		public void startOperator(string op_url, string op_id) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
 
-			RemoteAsyncDelegateString RemoteDel = new RemoteAsyncDelegateString(rm_op.startWorking);
-			IAsyncResult RemAr = RemoteDel.BeginInvoke(op_id, null, null);
+			RemoteAsyncDelegateStart RemoteDel = new RemoteAsyncDelegateStart(rm_op.startWorking);
+			IAsyncResult RemAr = RemoteDel.BeginInvoke(op_id, op_url, null, null);
 		}
 
 		public void crashOperator(string op_url) {

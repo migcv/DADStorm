@@ -1,0 +1,8 @@
+<28/11/2016 20:01:28><OP1><tcp://localhost:10003/op>: <FILTER> RESULT <1, user3, "www.tecnico.ulisboa.pt">;
+<28/11/2016 20:01:34><OP1><tcp://localhost:10003/op>: <FILTER> RESULT <6, user4, "www.tecnico.ulisboa.pt">;
+<28/11/2016 20:01:35><OP1><tcp://localhost:10003/op>: <FILTER> RESULT <10, user3, "www.tecnico.ulisboa.pt">;
+<28/11/2016 20:01:35><OP2><tcp://localhost:10004/op>: <CUSTOM> RESULT <9, user6, "www.tecnico.ulisboa.pt">;
+<28/11/2016 20:01:36><OP3><tcp://localhost:10006/op>: <UNIQ> RESULT <6, user4, "www.tecnico.ulisboa.pt">;
+<28/11/2016 20:01:37><OP3><tcp://localhost:10007/op>: <UNIQ> RESULT <9, user6, "www.tecnico.ulisboa.pt">;
+<28/11/2016 20:01:39><OP3><tcp://localhost:10006/op>: <UNIQ> RESULT <1, user3, "www.tecnico.ulisboa.pt">;
+<28/11/2016 20:01:39><OP3><tcp://localhost:10006/op>: <UNIQ> RESULT <12, user5, "www.tecnico.ulisboa.pt">;

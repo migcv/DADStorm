@@ -214,8 +214,8 @@ namespace PuppetMaster {
 								logTextBox.AppendText("<" + op_params[i] + "> ");
 							}
 							logTextBox.AppendText("\r\n");
-							// Operator Info {ID, URLs, Type, InputSources, OutputSources, RoutingOption, logLevel, params}
-							object[] operator_info = { op_id, urlList, op_type, input, null, routing, loggingLevel, op_params };
+							// Operator Info {ID, URLs, Type, InputSources, OutputSources, RoutingOption, logLevel, output_op, replicas_url, params}
+							object[] operator_info = { op_id, urlList, op_type, input, null, routing, loggingLevel, null, null, op_params };
 							operartorList.Add(operator_info);
 						}
 					}
@@ -236,6 +236,8 @@ namespace PuppetMaster {
 			// Create the Remote Operator & insert Operator ID and URL in Dicitonary
 			for (int i = 0; i < operartorList.Count; i++) {
 				operartorList[i][6] = ((string) operartorList[i][6]).Equals("full") ? true : false;
+				operartorList[i][7] = operartorList[operartorList.Count - 1][1]; // Output Operator
+				List<string> replicas_url = (List<string>)operartorList[i][1];
 				createOperator(operartorList[i]);
 				operatorsURL.Add((string) operartorList[i][0], (List<string>) operartorList[i][1]);
 			}
