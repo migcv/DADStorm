@@ -39,10 +39,23 @@ namespace CommonTypes.operators
                     }
 
                     result = input;
-                }
+
+					for (int i = 0; i < replicas_url.Length; i++) {
+						if (String.Compare(op_url, replicas_url[i]) != 0) {
+							Uniq count_op = (Uniq)Activator.GetObject(typeof(Uniq), replicas_url[i]);
+
+							RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(count_op.updateUniq);
+							IAsyncResult RemAr = RemoteDel.BeginInvoke(result, null, null);
+						}
+					}
+				}
                 else throw new Exception("Invalid Argument Type");
             }
             else throw new Exception("Invalid Argument Count");
         }
-    }
+
+		public void updateUniq(Tuple new_input) {
+			tupleList.Add(new_input);
+		}
+	}
 }
