@@ -47,8 +47,7 @@ namespace CommonTypes {
 			this.isFullLog = logLevel;
 			this.parameters = parameters;
 			this.output_op = output_op;
-			Console.WriteLine("OUTPUT OP IS " + this.output_op[0]);
-			this.replicas_url = replicas_op; // TO DO
+			this.replicas_url = replicas_op;
 		}
 
 		public void process() {

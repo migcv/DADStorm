@@ -20,6 +20,18 @@ namespace CommonTypes.operators
         {
             this.tupleCounter++;
             this.result = Tuple.fromString(this.tupleCounter.ToString());
-        }
+			for (int i = 0; i < replicas_url.Length; i++) {
+				if (String.Compare(op_url, replicas_url[i]) != 0) {
+					Count count_op = (Count)Activator.GetObject(typeof(Count), replicas_url[i]);
+
+					RemoteAsyncDelegate RemoteDel = new RemoteAsyncDelegate(count_op.updateCount);
+					IAsyncResult RemAr = RemoteDel.BeginInvoke(null, null);
+				}
+			}
+		}
+
+		public void updateCount() {
+			tupleCounter++;
+		}
     }
 }

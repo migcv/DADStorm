@@ -29,12 +29,8 @@ namespace CommonTypes
 				String[] output = unsafeOutput == null ? null : unsafeOutput.ToArray();
 				String[] parameters = (unsafeParams == null || unsafeParams.Count < 1) ? null : unsafeParams.ToArray();
 
-				//List<string> replica_url = (List<string>)operator_info[1];
-				//replica_url.RemoveAt(i);
-				List<string> replica_url = new List<string>();
-
 				// createOperator(operatorID, operatorType, operatorPort, isFullLog, routing, inputSources, outputSources, output_op, replicas_url, operatorParams)
-				pcs.createOperator((string)operator_info[2], Int32.Parse(op_port), (bool)operator_info[6], (string)operator_info[5], input, output, (List<string>)operator_info[7], replica_url, parameters);
+				pcs.createOperator((string)operator_info[2], Int32.Parse(op_port), (bool)operator_info[6], (string)operator_info[5], input, output, (List<string>)operator_info[7], (List<string>)operator_info[1], parameters);
 			}
 		}
 
