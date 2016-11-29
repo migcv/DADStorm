@@ -5,6 +5,7 @@ using System.IO;
 using System.Runtime.Remoting.Channels;
 using System.Runtime.Remoting.Channels.Tcp;
 using System.Runtime.Remoting.Messaging;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 
@@ -36,6 +37,7 @@ namespace CommonTypes {
 		public int interval = 0;
 
 		private bool logCleaned = false;
+		private List<string> logList;
 
 		public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] output_op, string[] replicas_op, string[] parameters = null) {
 			this.type = type;
@@ -67,9 +69,15 @@ namespace CommonTypes {
 		public void receiveInput(Tuple input) {
 			inputList.Add(input);
 			Console.WriteLine("RECEIVED <" + input.ToString() + ">;\r\n");
-
-			//RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
-			//output_op.writeLog(this.op_id, this.type, "RECEIVED <" + result.ToString() + ">");
+			// Writing on log throgh the output operator
+			if (String.Compare(this.op_url, this.output_op[0]) == 0) {
+				writeLog(this.op_id, this.type, this.op_url, "RECEIVED <" + input.ToString() + ">");
+			}
+			else {
+				RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
+				RemoteAsyncDelegateLog RemoteDelOutput = new RemoteAsyncDelegateLog(output_op.writeLog);
+				IAsyncResult RemArOutput = RemoteDelOutput.BeginInvoke(this.op_id, this.type, this.op_url, "RECEIVED <" + input.ToString() + ">", null, null);
+			}
 		}
 
 		public abstract void doOperation(Tuple input);
@@ -114,17 +122,7 @@ namespace CommonTypes {
 		}
 
 		public void writeLog(string op_id, string op_type, string op_url, string str) {
-			if (!logCleaned) {
-				System.IO.File.WriteAllText(@"../../../output/log.txt", string.Empty);
-				logCleaned = true;
-			}
-			while(IsFileReady("../../../output/log.txt"));
-			try {
-				using (System.IO.StreamWriter file =
-				new System.IO.StreamWriter(@"../../../output/log.txt", true)) {
-					file.WriteLine("<" + DateTime.Now + "><" + op_id + "><" + op_url + ">: <" + op_type + "> " + str + ";");
-				}
-			} catch(Exception) { }
+			logList.Add("<" + DateTime.Now + "><" + op_id + " " + op_url + ">: <" + op_type + "> " + str +";");
 		}
 
 		public string Name {
@@ -139,6 +137,16 @@ namespace CommonTypes {
 			state = Constants.STATE_RUNNING;
 			doWork = true;
 			start();
+			// Writing on log throgh the output operator
+			if (String.Compare(this.op_url, this.output_op[0]) == 0) {
+				writeLog(this.op_id, this.type, this.op_url, "STARTED");
+			}
+			else {
+				RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
+				RemoteAsyncDelegateLog RemoteDelOutput = new RemoteAsyncDelegateLog(output_op.writeLog);
+				IAsyncResult RemArOutput = RemoteDelOutput.BeginInvoke(this.op_id, this.type, this.op_url, "STARTED", null, null);
+			}
+			Console.WriteLine("STARTED;\r\n");
 		}
 
 		public void crashOperator() {
@@ -148,6 +156,16 @@ namespace CommonTypes {
 		public void freeze() {
 			isFreezed = true;
 			state = Constants.STATE_FREEZED;
+			// Writing on log throgh the output operator
+			if (String.Compare(this.op_url, this.output_op[0]) == 0) {
+				writeLog(this.op_id, this.type, this.op_url, "FREZZED");
+			}
+			else {
+				RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
+				RemoteAsyncDelegateLog RemoteDelOutput = new RemoteAsyncDelegateLog(output_op.writeLog);
+				IAsyncResult RemArOutput = RemoteDelOutput.BeginInvoke(this.op_id, this.type, this.op_url, "FREZZED", null, null);
+			}
+			Console.WriteLine("FREZZED;\r\n");
 		}
 
 		public void unfreeze() {
@@ -158,6 +176,16 @@ namespace CommonTypes {
 			else {
 				state = Constants.STATE_WAITING;
 			}
+			// Writing on log throgh the output operator
+			if (String.Compare(this.op_url, this.output_op[0]) == 0) {
+				writeLog(this.op_id, this.type, this.op_url, "UNFREZZED");
+			}
+			else {
+				RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
+				RemoteAsyncDelegateLog RemoteDelOutput = new RemoteAsyncDelegateLog(output_op.writeLog);
+				IAsyncResult RemArOutput = RemoteDelOutput.BeginInvoke(this.op_id, this.type, this.op_url, "UNFREZZED", null, null);
+			}
+			Console.WriteLine("UNFREZZED;\r\n");
 		}
 
 		public string operatorState() { return state; }
@@ -169,10 +197,28 @@ namespace CommonTypes {
 		 *	Private Methods
 		 */
 
+		private void logWritter() {
+			while (true) {
+				while (logList.Count == 0) ;  // Waits until have something to write on log
+				using (StreamWriter file = new StreamWriter(@"../../../output/log.txt", true)) {
+					file.WriteLine(""+logList[0]);
+				}
+				logList.RemoveAt(0);
+			}
+		}
+
 		private void start() {
-			Thread oThread = new Thread(new ThreadStart(this.process));
-			oThread.Start();
-			while (!oThread.IsAlive) ;
+			Thread oThreadProcess = new Thread(new ThreadStart(this.process));
+			oThreadProcess.Start();
+			while (!oThreadProcess.IsAlive);
+
+			if(String.Compare(output_op[0], op_url) == 0) {
+				logList = new List<string>();
+				File.WriteAllText(@"../../../output/log.txt", "");
+				Thread oThreadLog = new Thread(new ThreadStart(this.logWritter));
+				oThreadLog.Start();
+				while (!oThreadLog.IsAlive) ;
+			}
 
 			if (!inputSources[0].StartsWith("tcp://")) { // Input from file
 				List<Tuple> tupleList = this.readFromFile(inputSources[0]);
@@ -257,25 +303,6 @@ namespace CommonTypes {
 			state = Constants.STATE_WAITING;
 			Thread.Sleep(interval);
 			state = Constants.STATE_RUNNING;
-		}
-
-		public static bool IsFileReady(String sFilename) {
-			// If the file can be opened for exclusive access it means that the file
-			// is no longer locked by another process.
-			try {
-				using (FileStream inputStream = File.Open(sFilename, FileMode.Open, FileAccess.Read, FileShare.None)) {
-					if (inputStream.Length > 0) {
-						return true;
-					}
-					else {
-						return false;
-					}
-
-				}
-			}
-			catch (Exception) {
-				return false;
-			}
 		}
 		/*
 		 *	CODE THATS NO LONGER USED 
