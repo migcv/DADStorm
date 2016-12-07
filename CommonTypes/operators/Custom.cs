@@ -38,16 +38,9 @@ namespace CommonTypes.operators {
                     }
                 }
             }
-            catch
-            (ReflectionTypeLoadException ex){
-                // now look at ex.LoaderExceptions - this is an Exception[], so:
-                foreach (Exception inner in ex.LoaderExceptions){
-                    // write details of "inner", in particular inner.Message
-                    Console.WriteLine(inner.Message);
-                    result = input;
+            catch {
+                result = input;
                 }
-
-            }
         }
     }
 }
