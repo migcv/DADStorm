@@ -60,10 +60,13 @@ namespace CommonTypes {
                         string nextOp = workingOutputSources[0];
                         try
                         {
-                            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), nextOp);
+                            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), firstOp);
                             RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
 
-                            //RemoteDel.EndInvoke(RemAr);
+                            Console.WriteLine("SENDING CALLBACK" + result);
+                            IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
+                            RemoteDel.EndInvoke(RemAr);
+
                         }
                         catch (Exception e1)
                         {
