@@ -43,7 +43,6 @@ namespace CommonTypes {
 		private List<string> logList;
 
         public void AsyncCallBackOperator(IAsyncResult ar) {
-            String firstOp = this.getRoutingOperator();
             try {
                 RemoteAsyncDelegateTuple del = (RemoteAsyncDelegateTuple)((AsyncResult)ar).AsyncDelegate;
                 del.EndInvoke(ar);
@@ -51,8 +50,7 @@ namespace CommonTypes {
                 buildWorkingOps();
                 if (workingOutputSources != null)
                 {
-                    workingOutputSources.Remove(firstOp);
-
+                   
                 TrySend:
                     Console.WriteLine("FALLBACK");
                     if (this.workingOutputSources.Count > 0)
@@ -60,12 +58,13 @@ namespace CommonTypes {
                         string nextOp = workingOutputSources[0];
                         try
                         {
-                            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), firstOp);
+                            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), nextOp);
                             RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
 
-                            Console.WriteLine("SENDING CALLBACK" + result);
+                            Console.WriteLine("SENDING CALLBACK - Result: " + result);
                             IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
                             RemoteDel.EndInvoke(RemAr);
+                            writeLog(this.op_id, this.type, this.op_url, "RESULT <" + result.ToString() + ">");
 
                         }
                         catch (Exception e1)
@@ -152,7 +151,7 @@ namespace CommonTypes {
             RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
                 
             if (!semantic.Equals("at-most-once")){ // semantic at-least-once, exactly-once
-                IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, AsyncCallBackOperator, null);
+                IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, AsyncCallBackOperator, this.result);
             }
             else{ // semantic at-most-once
                 IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
