@@ -19,6 +19,7 @@ namespace CommonTypes {
 
 		public string[] inputSources;   // URLs of the previous Operators
 		public string[] outputSources;  // URLs of the next Operators
+        public List<String> workingOutputSources;
 
 		public string op_url;			// Operators own URL
 		public string[] replicas_url;	// Operators replicas URL
@@ -48,7 +49,7 @@ namespace CommonTypes {
 			this.parameters = parameters;
 			this.output_op = output_op;
 			this.replicas_url = replicas_op;
-		}
+        }
 
 		public void process() {
 			while (true) {
@@ -76,7 +77,7 @@ namespace CommonTypes {
 				RemoteOperator output_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.output_op[0]);
 				RemoteAsyncDelegateLog RemoteDelOutput = new RemoteAsyncDelegateLog(output_op.writeLog);
 				IAsyncResult RemArOutput = RemoteDelOutput.BeginInvoke(this.op_id, this.type, this.op_url, "RECEIVED <" + input.ToString() + ">", null, null);
-			}
+            }
 		}
 
 		public abstract void doOperation(Tuple input);
@@ -106,12 +107,44 @@ namespace CommonTypes {
 			TcpChannel channel = new TcpChannel(options, null, null);
 			ChannelServices.RegisterChannel(channel, true);
 
-			RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), this.getRoutingOperator());
+            String firstOp = this.getRoutingOperator();
 
-			RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
-			IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
+            try
+            {
+                RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), firstOp);
+                RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
+                IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
+                RemoteDel.EndInvoke(RemAr);
+            }
+            catch(Exception e)
+            {
+                buildWorkingOps();
+                if(workingOutputSources != null)
+                {
+                    workingOutputSources.Remove(firstOp);
 
-			if (isFullLog) { // Is full log, must send result to PuppetMaster
+                TrySend:
+                    Console.WriteLine("FALLBACK");
+                    if (this.workingOutputSources.Count > 0)
+                    {
+                        string nextOp = workingOutputSources[0];
+                        try
+                        {
+                            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), nextOp);
+                            RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
+                            IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
+                            RemoteDel.EndInvoke(RemAr);
+                        }
+                        catch (Exception e1)
+                        {
+                            this.workingOutputSources.RemoveAt(0);
+                            goto TrySend;
+                        }
+                    }
+                }
+            }
+
+            if (isFullLog) { // Is full log, must send result to PuppetMaster
 				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
 				string[] resultArray = { op_id, type, result.ToString() };
 				pm.receiveResult(resultArray);
@@ -303,6 +336,19 @@ namespace CommonTypes {
 			Thread.Sleep(interval);
 			state = Constants.STATE_RUNNING;
 		}
+
+        private void buildWorkingOps()
+        {
+            if (this.outputSources == null) return;
+
+            this.workingOutputSources = new List<string>();
+
+            foreach(String op in this.outputSources)
+            {
+                this.workingOutputSources.Add(op);
+            }
+        }
+
 		/*
 		 *	CODE THATS NO LONGER USED 
 		 */

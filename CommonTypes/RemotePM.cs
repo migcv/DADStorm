@@ -52,8 +52,13 @@ namespace CommonTypes
 		}
 
 		public void intervalOperator(string op_url, int miliseconds) {
-			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-			rm_op.setInterval(miliseconds);
+            try
+            {
+                RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
+			    rm_op.setInterval(miliseconds);
+            }
+            catch(Exception e) {}
+			
 		}
 
 		public void freezeOperator(string op_url) {
@@ -72,7 +77,15 @@ namespace CommonTypes
 
 		public string statusOperator(string op_url) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-			return rm_op.operatorState();
+            try
+            {
+                return rm_op.operatorState();
+            }
+            catch(Exception e)
+            {
+                return "UNKNOWN";
+            }
+		
 		}
 
 		public void receiveResult(string[] result) {
