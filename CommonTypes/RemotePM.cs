@@ -34,11 +34,11 @@ namespace CommonTypes
 			}
 		}
 
-		public void startOperator(string op_url, string op_id) {
+		public void startOperator(string op_url, string op_id, string semantic) {
 			RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
 
 			RemoteAsyncDelegateStart RemoteDel = new RemoteAsyncDelegateStart(rm_op.startWorking);
-			IAsyncResult RemAr = RemoteDel.BeginInvoke(op_id, op_url, null, null);
+			IAsyncResult RemAr = RemoteDel.BeginInvoke(op_id, op_url, semantic, null, null);
 		}
 
 		public void crashOperator(string op_url) {
@@ -52,10 +52,11 @@ namespace CommonTypes
 		}
 
 		public void intervalOperator(string op_url, int miliseconds) {
-            try
-            {
+            try {
                 RemoteOperator rm_op = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), op_url);
-			    rm_op.setInterval(miliseconds);
+
+				RemoteAsyncDelegateInt RemoteDel = new RemoteAsyncDelegateInt(rm_op.setInterval);
+				IAsyncResult RemAr = RemoteDel.BeginInvoke(miliseconds, null, null);
             }
             catch(Exception e) {}
 			

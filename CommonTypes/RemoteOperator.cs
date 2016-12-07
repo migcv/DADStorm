@@ -25,11 +25,13 @@ namespace CommonTypes {
 		public string[] replicas_url;	// Operators replicas URL
 		public string[] output_op;		// Output Opeartor (last operator) URL
 
-		public string routing;           // Routing method: PRIMARY, HASH, RANDOM
+		public string routing;			// Routing method: PRIMARY, HASH, RANDOM
 
-		public bool isFullLog;           // Controls if Operator have to send logs of the results to the PuppetMaster
+		public string semantic;			// at-most-once | at-least-once | exactly-once
 
-		public string[] parameters;      // Parameters for the operation
+		public bool isFullLog;			// Controls if Operator have to send logs of the results to the PuppetMaster
+
+		public string[] parameters;		// Parameters for the operation
 
 		public string state = Constants.STATE_WAITING;
 
@@ -39,6 +41,12 @@ namespace CommonTypes {
 
 		private bool logCleaned = false;
 		private List<string> logList;
+
+		public static void AsyncCallBackOperator(IAsyncResult ar) {
+			RemoteAsyncDelegateTuple del = (RemoteAsyncDelegateTuple)((AsyncResult)ar).AsyncDelegate;
+			del.EndInvoke(ar);
+			return;
+		}
 
 		public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] output_op, string[] replicas_op, string[] parameters = null) {
 			this.type = type;
@@ -132,8 +140,13 @@ namespace CommonTypes {
                         {
                             RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), nextOp);
                             RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
-                            IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
-                            RemoteDel.EndInvoke(RemAr);
+							if (!semantic.Equals("at-most-once")) { // semantic at-least-once, exactly-once
+								IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, AsyncCallBackOperator, null);
+							}
+							else { // semantic at-most-once
+								IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
+							}
+                            //RemoteDel.EndInvoke(RemAr);
                         }
                         catch (Exception e1)
                         {
@@ -163,8 +176,9 @@ namespace CommonTypes {
 
 		public void setInterval(int miliseconds) { interval = miliseconds; }
 
-		public void startWorking(string op_id, string op_url) {
+		public void startWorking(string op_id, string op_url, string semantic) {
 			this.op_id = op_id;
+			this.semantic = semantic;
 			this.op_url = op_url;
 			state = Constants.STATE_RUNNING;
 			doWork = true;

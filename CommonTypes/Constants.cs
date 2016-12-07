@@ -15,7 +15,7 @@ namespace CommonTypes
 
 	public delegate void RemoteAsyncDelegateString(string str);
 
-	public delegate void RemoteAsyncDelegateStart(string id, string url);
+	public delegate void RemoteAsyncDelegateStart(string id, string url, string semantic);
 
 	public delegate void RemoteAsyncDelegateLog(string id, string type, string url, string log);
 
@@ -29,11 +29,5 @@ namespace CommonTypes
 		public const string STATE_RUNNING = "RUNNING";
 		public const string STATE_WAITING = "WAITING";
 		public const string STATE_FREEZED = "FREEZED";
-
-		public static void OurRemoteAsyncCallBack(IAsyncResult ar) {
-			// Alternative 2: Use the callback to get the return value
-			RemoteAsyncDelegateTuple del = (RemoteAsyncDelegateTuple)((AsyncResult)ar).AsyncDelegate;
-			return;
-		}
 	}
 }

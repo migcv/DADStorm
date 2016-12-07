@@ -17,7 +17,8 @@ namespace PuppetMaster {
 		private readonly bool LOCALHOST = true; // Flag that says if the project is to be run in a single machine or in many machines
 		private int port_localhost = 10002; // 1st port thats free to use, only if the project is running in one machine
 
-		string loggingLevel = null;	// full or light
+		string loggingLevel = null; // full or light
+		string semantics = null; // at-most-once | at-least-once | exactly-once
 
 		private Dictionary<string, List<string>> operatorsURL; // List with each operators replica url
 
@@ -80,7 +81,7 @@ namespace PuppetMaster {
 				logTextBox.AppendText("<PuppetMaster>: <" + op_id + ">");
 				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
 				for (int i = 0; i < operatorsURL[op_id].Count; i++) {
-					pm.startOperator(operatorsURL[op_id][i], op_id);
+					pm.startOperator(operatorsURL[op_id][i], op_id, semantics);
 					logTextBox.AppendText(" <" + operatorsURL[op_id][i] + ">");
 				}
 				logTextBox.AppendText(" started;\r\n");
@@ -146,7 +147,7 @@ namespace PuppetMaster {
 			string op_id = null, n_rep = null, routing = null, op_type = null;
 			List<string> input = null, urlList = null, op_params = null;
 
-			string semantics = null;
+			semantics = null;
 			loggingLevel = null;
 
 			logTextBox.AppendText("<PuppetMaster>: Reading config file;\r\n");
