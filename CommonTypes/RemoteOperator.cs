@@ -42,10 +42,38 @@ namespace CommonTypes {
 		private bool logCleaned = false;
 		private List<string> logList;
 
-		public static void AsyncCallBackOperator(IAsyncResult ar) {
-			RemoteAsyncDelegateTuple del = (RemoteAsyncDelegateTuple)((AsyncResult)ar).AsyncDelegate;
-			del.EndInvoke(ar);
-			return;
+        public void AsyncCallBackOperator(IAsyncResult ar) {
+            String firstOp = this.getRoutingOperator();
+            try {
+                RemoteAsyncDelegateTuple del = (RemoteAsyncDelegateTuple)((AsyncResult)ar).AsyncDelegate;
+                del.EndInvoke(ar);
+            }catch {
+                buildWorkingOps();
+                if (workingOutputSources != null)
+                {
+                    workingOutputSources.Remove(firstOp);
+
+                TrySend:
+                    Console.WriteLine("FALLBACK");
+                    if (this.workingOutputSources.Count > 0)
+                    {
+                        string nextOp = workingOutputSources[0];
+                        try
+                        {
+                            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), nextOp);
+                            RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
+
+                            //RemoteDel.EndInvoke(RemAr);
+                        }
+                        catch (Exception e1)
+                        {
+                            this.workingOutputSources.RemoveAt(0);
+                            goto TrySend;
+                        }
+                    }
+                }
+            }
+            return;
 		}
 
 		public RemoteOperator(string type, string[] inputSources, string[] outputSources, string routing, bool logLevel, string[] output_op, string[] replicas_op, string[] parameters = null) {
@@ -117,45 +145,17 @@ namespace CommonTypes {
 
             String firstOp = this.getRoutingOperator();
 
-            try
-            {
-                RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), firstOp);
-                RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
+            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), firstOp);
+            RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
+                
+            if (!semantic.Equals("at-most-once")){ // semantic at-least-once, exactly-once
+                IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, AsyncCallBackOperator, null);
+            }
+            else{ // semantic at-most-once
                 IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
-                RemoteDel.EndInvoke(RemAr);
             }
-            catch(Exception e)
-            {
-                buildWorkingOps();
-                if(workingOutputSources != null)
-                {
-                    workingOutputSources.Remove(firstOp);
-
-                TrySend:
-                    Console.WriteLine("FALLBACK");
-                    if (this.workingOutputSources.Count > 0)
-                    {
-                        string nextOp = workingOutputSources[0];
-                        try
-                        {
-                            RemoteOperator outputOperator = (RemoteOperator)Activator.GetObject(typeof(RemoteOperator), nextOp);
-                            RemoteAsyncDelegateTuple RemoteDel = new RemoteAsyncDelegateTuple(outputOperator.receiveInput);
-							if (!semantic.Equals("at-most-once")) { // semantic at-least-once, exactly-once
-								IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, AsyncCallBackOperator, null);
-							}
-							else { // semantic at-most-once
-								IAsyncResult RemAr = RemoteDel.BeginInvoke(this.result, null, null);
-							}
-                            //RemoteDel.EndInvoke(RemAr);
-                        }
-                        catch (Exception e1)
-                        {
-                            this.workingOutputSources.RemoveAt(0);
-                            goto TrySend;
-                        }
-                    }
-                }
-            }
+            //RemoteDel.EndInvoke(RemAr);
+           
 
             if (isFullLog) { // Is full log, must send result to PuppetMaster
 				RemotePM pm = (RemotePM)Activator.GetObject(typeof(RemotePM), "tcp://localhost:10001/RemotePM");
