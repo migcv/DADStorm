@@ -7,10 +7,17 @@ Group 20  <br/>
 
 All input files and .dll files must be placed in the "input" folder
 
-The project must be run in "Multiple startup Project" with 
-PuppetMaster and ProcessCreationService with the action to "Start",
-the others projects must have the action in "None".
+The log file is in the ouput folder
 
 The config file location is not important because it can be select manually with a file dialog.
 
-The buttons "Start One" and "Start All" in the PuppetMaster can't be used.
+The project must be run in "Multiple startup Project" with 
+PuppetMaster and PCS(ProcessCreationService) with the action to "Start",
+the others projects must have the action in "None".
+
+[IMPORTANT] Before running the project the solution must be built: Build->Build Solution
+After this the project can be executed.
+
+To run the commands press the [Start] button
+
+Before closing, in the end, press [Crash All] to close all operators
