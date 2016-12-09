@@ -13,7 +13,7 @@ namespace CommonTypes.operators {
 
         public override void doOperation(Tuple input) {
            if (parameters.Length == 3)                {
-                this.dll = "C:/Users/Admin/Documents/GitHub/DADStorm/input/" + parameters[0];
+                this.dll = "../../../input/" + parameters[0];
                 this.className = parameters[1];
                 this.method = parameters[2];
             }
